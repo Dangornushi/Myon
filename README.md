@@ -2,6 +2,8 @@
 
 Rustに似たオリジナルの言語をPythonやCに変換するソフトウェア。
 
+This is a software convert to C and Python what original language like Rust.
+
 # DEMO
 
 # Features
@@ -10,7 +12,11 @@ Rustに似たオリジナルの言語をPythonやCに変換するソフトウェ
 
 「仕事でPython使うけど文法よくわかんないな」や「C言語って難しそうだよな」なんて時に使える言語変換機。
 
+This is a language that overcame differences of execution formats such as interpreters and compilations.
 
+If you have to use Python or C in your work but you arent know about these languages 
+
+Or if you Has resistance to study C,it will be very usefull.
 
 # Laungages
 
