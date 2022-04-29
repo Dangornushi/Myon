@@ -212,6 +212,9 @@ char *type_comp(char* type) {
     if (!strcmp(type, "str")) {
         return "char*";
     }
+    if (!strcmp(type, "cls")) {
+        return "struct";
+    }
     return "void";
 }
 
@@ -302,8 +305,14 @@ Node *classDef() {
     }
     if (lang==0) {
         post("struct ");
-        post(class_name);
+        post(class_name+2);
         post("{\n");
+        post("void (*__MenbaFuncPtr)(struct ");
+        post(class_name+2);
+        post(" myon_");
+        post(class_name+2);
+        post(");\n");
+        post("int __FuncsCounter;\n");
     }
     if (lang==1) {
         post("class ");
@@ -325,6 +334,12 @@ Node *classDef() {
         node->indent--;
     if (lang==0) {
         //C
+        if (lang==0) post("};\n");
+        if (lang==1) node->indent--;
+        if (!equal("fn")) {
+            node->ti++;
+            node = function();
+        }
     }
     if (lang==1) {
         post("\tdef myon_put(__word):\n\t\tprint(__word)\n");
@@ -334,10 +349,10 @@ Node *classDef() {
             node->ti++;
             node = function();
         }
+        if (lang==0) post("};\n");
+        if (lang==1) node->indent--;
     }
     expect("}");
-    if (lang==0) post("};\n");
-    if (lang==1) node->indent--;
     return node;
 }
 
@@ -359,8 +374,9 @@ Node *personal() {
         // トランスパイルされたコード
         if (lang==0) {
             // C
-            tmp = malloc(strlen(type)+strlen(name)+1);
-            sprintf(tmp, "%s %s", type, name);
+            tmp = malloc(strlen(type)+(sizeof(char*)*2)+strlen(name)+1);
+            if (!strcmp(type, "int")) sprintf(tmp, "%s %s", type, name);
+            if (!strcmp(type, "str")) sprintf(tmp, "char* %s", name);
             post(tmp);
             free(tmp);
             post(";\n");
@@ -400,6 +416,7 @@ Node *function() {
     function_args = malloc(sizeof(char*));
     strcpy(function_args, "");
 
+
     // void 以外の型明記
     if (strcmp(node->tok[node->ti], "void")) {
         for (i=0;i<arg_size;i++) {
@@ -409,12 +426,12 @@ Node *function() {
         if (lang == 0) {
             func_arg_call();
             for (i=0;i<arg_size;i++) {
-                function_args = realloc(function_args, strlen(function_args)+strlen(node->arg[i].type)+strlen(node->arg[i].name)+1);
+                function_args = realloc(function_args, strlen("  myon_")+strlen(function_args)+strlen(node->arg[i].type)+strlen(node->arg[i].name)*2+1);
                 if (function_args == NULL) {
                     printf("メモリエラー\n");
                     exit(1);
                 }
-                sprintf(function_args, "%s%s %s", function_args, node->arg[i].type, node->arg[i].name);
+                sprintf(function_args, "%s%s %s myon_%s", function_args, node->arg[i].type, node->arg[i].name, node->arg[i].name);
             }
         }
         if (lang == 1) {
@@ -436,7 +453,7 @@ Node *function() {
         if (lang == 0) sprintf(function_args, "void");
     }
     // 表記なし
-    else ;
+    else {}
 
     expect(")");
     expect("<-");
@@ -592,8 +609,14 @@ Node *sent() {
             node = add_sub();node->ti++;
             var_data = node->var; //varOrconst(node->var);
             cls_name = var_data+5;
-            def = malloc(strlen(var_name)+strlen(cls_name)+9);
-            sprintf(def, "myon_%s = %s", var_name,  cls_name);
+            if (lang == 0) {
+                def = malloc(strlen(class_name+2)+strlen(var_name)*2+strlen("struct   = {0};\n.__FuncsCounter = 0")+1);
+                sprintf(def, "struct %s %s = {0};\n%s.__FuncsCounter = 0", class_name+2, var_name, var_name);
+            }
+            if (lang == 1) {
+                def = malloc(strlen(var_name)+strlen(cls_name)+1+sizeof(char*)*8);
+                sprintf(def, "myon_%s = %s", var_name,  cls_name);
+            }
         }
         var_data = NULL;
          free(var_data);
@@ -604,7 +627,9 @@ Node *sent() {
          * コード生成フェーズ
         */
         post(def);
-        if (lang == 0) post(";");
+        if (lang == 0) {
+            post(";");
+        }
 
         post("\n");
         free(def);
@@ -841,12 +866,11 @@ Node *funcCall() {
         // next_equalの分
         node->ti++;
         expect("(");
-        func_call_sent = NULL;
-        func_call_sent = malloc(strlen(call_func_name)+7);
-        if (func_call_sent == NULL) exit(1);
+        char func_call_sent[10000];
         if (strcmp(call_func_name, "put")) {
             if (lang == 1) for (int i=0;i<node->indent;i++) post("\t");
-            sprintf(func_call_sent, "myon_%s", call_func_name); // printでなければの処理
+            if (lang == 0) strcat(func_call_sent, call_func_name); // printでなければの処理
+            else sprintf(func_call_sent, "myon_%s", call_func_name); // printでなければの処理
         }
         else {
             if (lang == 1) {
@@ -863,18 +887,10 @@ Node *funcCall() {
         if (node->ty[node->ti] != TY_IDENT) {
             arg_call();
             for (int i=0;i<arg_size;i++) {
+                char *data = node->arg[i].name;
                 char *tmp_ptr = NULL;
-                if ((tmp_ptr = realloc(func_call_sent, strlen(func_call_sent) + strlen(node->arg[i].name)+1)) == NULL) {
-                    exit(1);
-                }
-                func_call_sent = tmp_ptr;
-                sprintf(func_call_sent, "%s%s", func_call_sent, node->arg[i].name);
+                sprintf(func_call_sent, "%s%s", func_call_sent,data);
             }
-            char *tmp_ptr = realloc(func_call_sent, strlen(func_call_sent) + 1);
-            if (tmp_ptr == NULL) {
-                exit(1);
-            }
-            func_call_sent = tmp_ptr;
         }
         else {
             node->ti++;
@@ -884,7 +900,6 @@ Node *funcCall() {
         expect(")");
         node->ti--;
         node->var =  func_call_sent;
-        free(func_call_sent);
     }
     return node;
 }
@@ -903,13 +918,16 @@ Node *word() {
         char *name = NULL;
         char *p, *t2;
 
-        name = node->tok[node->ti++];
-        node->ti++;
-        tmp[c++] = name;
-        b1 = 1;
-        node->var = name;
-        node = funcCall();
-
+            b1 = 1;
+        if (lang == 0) {
+        }
+        if (lang == 1) {
+            name = node->tok[node->ti];
+            tmp[c++] = name;
+        }
+            node->var = name;
+            node->ti+=2;
+            node = funcCall();
         return node;
     }
     else if (b1!=0) {
@@ -918,44 +936,62 @@ Node *word() {
         char *p2 = NULL;
         char *now_sent = NULL;
 
-        if (node->tok[node->ti+1][0] == '(') {
-            now_sent = malloc(1+strlen(node->tok[node->ti])+sizeof(char*)*5);
-            sprintf(now_sent, "myon_%s", node->tok[node->ti]);
+        if (lang == 0) {
+            if (node->tok[node->ti+1][0] != '(') {
+                word = (char*)malloc(strlen(node->tok[node->ti-2])+strlen(node->tok[node->ti])+strlen("myon_.")+1);
+                sprintf(word, "myon_%s.%s", node->tok[node->ti-2], node->tok[node->ti]);
+                node->var = word;
+                free(word);
+            }
+            else {
+                char sent[MAX_INDEX];
+                char *cls = node->tok[node->ti-2];
+                char *f = node->tok[node->ti];
+                sprintf(sent, "myon_%s", f);
+                node->var = sent;
+            }
         }
-        else {
-            now_sent = malloc(strlen(node->tok[node->ti])+1);
-            strcpy(now_sent, node->tok[node->ti]);
-        }
 
-        word = (char*)malloc(strlen("a"));
+        if (lang == 1) {
+            if (node->tok[node->ti+1][0] == '(') {
+                now_sent = malloc(1+strlen(node->tok[node->ti])+sizeof(char*)*5);
+                sprintf(now_sent, "myon_%s", node->tok[node->ti]);
+            }
+            else {
+                now_sent = malloc(strlen(node->tok[node->ti])+1);
+                strcpy(now_sent, node->tok[node->ti]);
+            }
 
-        for (int i=0;i<c;i++) {
-            p = (char*)realloc(word, strlen(word)+strlen(tmp[i])+sizeof(char*));
+            word = (char*)malloc(strlen("a"));
 
-            if (p == NULL) {
-                printf("Memory Err.\n");
+            for (int i=0;i<c;i++) {
+                p = (char*)realloc(word, strlen(word)+strlen(tmp[i])+sizeof(char*));
+
+                if (p == NULL) {
+                    printf("Memory Err.\n");
+                    exit(1);
+                }
+                if (p != word) {
+                    word = p;
+                }
+                sprintf(word, "%s%s.", word, tmp[i]);
+            }
+            p2 = realloc(word, strlen(word)+strlen(now_sent)+1);
+            if (p2 == NULL) {
+                printf("Memory Err\n");
                 exit(1);
             }
-            if (p != word) {
-                word = p;
+            if (p2 != word) {
+                word = p2;
             }
-            sprintf(word, "%s%s.", word, tmp[i]);
-        }
-        p2 = realloc(word, strlen(word)+strlen(now_sent)+1);
-        if (p2 == NULL) {
-            printf("Memory Err\n");
-            exit(1);
-        }
-        if (p2 != word) {
-            word = p2;
-        }
-        sprintf(word, "%s%s", word, now_sent);//+5);
-        strcpy(node->var, word);
-        free(word);
-        free(now_sent);
+            sprintf(word, "%s%s", word, now_sent);//+5);
+            strcpy(node->var, word);
+            free(word);
+            free(now_sent);
 
-        b1 = 0;
-        c= 0;
+        }
+            b1 = 0;
+            c= 0;
         return node;
     }
     if (!next_equal("[")) {

@@ -44,11 +44,16 @@ typedef struct {
 } Python;
 
 typedef struct {
+    void (*MembaFuncs[MAX_INDEX]) ();
+} C_Class;
+
+typedef struct {
     // 変数
     Typekind ty[MAX_INDEX/1024];
     Arg arg[MAX_INDEX];
     Mem sub[MAX_INDEX];
     Mem mem[MAX_INDEX];
+    C_Class c_cls[MAX_INDEX];
 
     char tok[MAX_INDEX][MAX_INDEX];
     char *write_data;
