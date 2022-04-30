@@ -14,7 +14,7 @@ This is a software convert to C and Python what original language like Rust.
 
 This is a language that overcame differences of execution formats such as interpreters and compilations.
 
-If you have to use Python or C in your work but you arent know about these languages 
+If you have to use Python or C in your work but you arent know about these languages
 
 Or if you Has resistance to study C,it will be very usefull.
 
@@ -30,7 +30,7 @@ Define as a function
 ```
 fn FunctionName ( Type ArgName ) <- FunctionType { FunctionDatas }
 ```
-:
+
 print something number
 
 ```
@@ -42,6 +42,18 @@ Define as vartage
 ```
 let VarName : Type <- Data ;
 let VarName : Type is Data ;
+```
+
+Define class
+
+```
+class ClassName {
+    @import {
+        // ClassArgs
+    }
+    @public {
+    }
+}
 ```
 
 # Useage
