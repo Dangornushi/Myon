@@ -41,9 +41,17 @@ int b1 = 0;
 int wl         = 0;
 int arg_size   = 0;
 int calc_index = 0;
+int B_NOTMYON = 0;
 char *calc_ary[MAX_INDEX];
 
 Node *node;
+
+void error() {
+    printf("\x1b[31m");
+    printf("Transpile was unsuccessful.\n");
+    printf("\x1b[39m");
+    printf("\n");
+}
 
 int array_index(char *str, char *array[MAX_INDEX], int size) {
     for (int s=0;s < size;s++) {
@@ -81,6 +89,7 @@ int next_equal(char *str) {
 void expect(char *str) {
     if (equal(str)) {
         printf("Expected : '%s' but '%s'\n", str, node->tok[node->ti]);
+        error();
         exit(1);
     }
     node->ti++;
@@ -491,6 +500,14 @@ Node *sent() {
     char tmp[MAX_INDEX], *var_name;
     node = funcCall();
 
+    // if node->tok[node->ti] was "}" then skip it.
+    if (!equal("}")) {
+        return node;
+    }
+
+    // else
+    else ;
+
     if (!equal("let")) {
         /*
          * 変数定義
@@ -808,6 +825,11 @@ Node *sent() {
         node->ti++;
         node = sent();
     }
+    else {
+        printf("SyntaxError : '%s' is not a token.\n", node->tok[node->ti]);
+        error();
+        exit(1);
+    }
     return node;
 }
 
@@ -869,7 +891,7 @@ Node *funcCall() {
         char func_call_sent[10000];
         if (strcmp(call_func_name, "put")) {
             if (lang == 1) for (int i=0;i<node->indent;i++) post("\t");
-            if (lang == 0) strcat(func_call_sent, call_func_name); // printでなければの処理
+            if (lang == 0 || !B_NOTMYON) strcat(func_call_sent, call_func_name); // printでなければの処理
             else sprintf(func_call_sent, "myon_%s", call_func_name); // printでなければの処理
         }
         else {
@@ -881,6 +903,7 @@ Node *funcCall() {
                 sprintf(func_call_sent, "put");
             }
         }
+            B_NOTMYON = 1;
         //strcat(func_call_sent, call_func_name);
         strcat(func_call_sent, "(");
         // 引数を審査して構造体(arg)に格納
@@ -914,6 +937,15 @@ int c=0;
 char *tmp_var;
 
 Node *word() {
+    if (node->tok[node->ti][0] == '[') {
+        node->ti++;
+        if (!equal("not")) {
+            node->ti++;
+            expect("myon");
+            expect("]");
+            B_NOTMYON = 0;
+        }
+    }
     if (!next_equal(".")) {
         char *name = NULL;
         char *p, *t2;

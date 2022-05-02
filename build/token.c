@@ -15,6 +15,8 @@ void tokenize(char *data) {
         "void",
         "fn",
         "is",
+        "not",
+        "myon"
         "<-",
         "+=",
         "-=",
@@ -61,7 +63,7 @@ void tokenize(char *data) {
             case '<': case '>':
             case ',': case '.':
             case '?': case '!':
-            case '@': case '_':
+            case '@':// case '_':
             case '\'': case '|':
                 {
                 sk_op = 0;
@@ -151,7 +153,7 @@ void tokenize(char *data) {
                     base[bc++] = data[i];
                     break;
                 }
-                if ('a' <= data[i] && data[i] <= 'z' || 'A' <= data[i] && data[i] <= 'Z') {
+                if ('_' == data[i] || 'a' <= data[i] && data[i] <= 'z' || 'A' <= data[i] && data[i] <= 'Z') {
                     ty = TY_STR;
                     base[bc++] = data[i];
                     break;
