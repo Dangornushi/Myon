@@ -23,6 +23,27 @@ Or if you Has resistance to study C,it will be very usefull.
 * C 11
 * python 3.8.2
 
+```
+Myon/
+┃
+┠ README.md
+┃
+┠ Makefile
+┃
+┠ bin/
+┃  ┗ myon
+┃
+┠ build/
+┃  ┣ main.c
+┃  ┣ parse.c
+┃  ┣ token.c
+┃  ┗ myon.h
+┃
+┗ lib/
+   ┗ common.h
+
+```
+
 # Grammer
 
 Define as a function
@@ -52,6 +73,10 @@ class ClassName {
         // ClassArgs
     }
     @public {
+        // PublicVars
+    }
+    fn MenbaFuncName (ClassName, Args...) <- FunctionType {
+        // FunctionData
     }
 }
 ```

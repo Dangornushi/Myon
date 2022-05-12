@@ -15,7 +15,7 @@
  * ```
  * // メンバ関数群
  * ~~~
- * ~~~
+ * ~~
  * // ---
  *
  * struct CLASSNAME {
@@ -23,7 +23,7 @@
  * }
  * ```
  *
- * Instance : 
+ * Instance :
  * 構造体のインスタンス
  *
  * Function call :
@@ -32,19 +32,22 @@
  * 宣伝と広報用のHP作ってみる
  * Ubuntu Server立ててみる
  * Serverの立て方調べてみる
- * JavascriptとCSSとHTML
- */
+
+ * JavascriptとCSSとHTML *
+*/
 
 #include "myon.h"
 
-int b1 = 0;
+int b1         = 0;
 int wl         = 0;
 int arg_size   = 0;
 int calc_index = 0;
-int B_NOTMYON = 0;
+int B_NOTMYON  = 0;
 char *calc_ary[MAX_INDEX];
 
 Node *node;
+
+
 
 void error() {
     printf("\x1b[31m");
@@ -206,7 +209,7 @@ void writeToFile() {
         sprintf(c_file_name, "%s.c", file_name);
     if (lang == 1)
         sprintf(c_file_name, "%s.py", file_name);
-    wfp = fopen(c_file_name, "w");
+    wfp = fopen(c_file_name, "w, ccs = UTF-8");
     fprintf(wfp, "%s", node->write_data);
     fclose(wfp);
 
@@ -440,7 +443,8 @@ Node *function() {
                     printf("メモリエラー\n");
                     exit(1);
                 }
-                sprintf(function_args, "%s%s %s myon_%s", function_args, node->arg[i].type, node->arg[i].name, node->arg[i].name);
+                if (!strcmp(node->arg[i].type, "strruct")) sprintf(function_args, "%s%s %s myon_%s", function_args, node->arg[i].type, node->arg[i].name, node->arg[i].name);
+                else sprintf(function_args, "%s%s  %s", function_args, node->arg[i].type, node->arg[i].name);
             }
         }
         if (lang == 1) {
@@ -544,7 +548,7 @@ Node *sent() {
                 // コード生成フェーズ
                 if (lang == 0) {
                     // C
-                    post("u_char *");
+                    post("char *");
                     post(var_name);
                     post("[");
                     post(index);
@@ -571,7 +575,7 @@ Node *sent() {
                 if (lang == 0) {
                     // C
                     if (len > 1) {
-                        post("u_char*");
+                        post("char*");
                         post(" ");
                         post(var_name);
                         post("=");
@@ -651,6 +655,22 @@ Node *sent() {
         post("\n");
         free(def);
         node = sent();
+    }
+    else if (!equal("input")) {
+        node->ti++;
+        node = word();node->ti++;
+        printf("input : %s\n", node->var);
+        if (lang == 0) {
+            char __MaxCommandLineLen[5];
+            sprintf(__MaxCommandLineLen, "%d", MAX_COMMAND_LINE_LEN);
+            post("char __myonTmpBuffer[");
+            post(__MaxCommandLineLen);
+            post("] = \"\";\nif (scanf(\"%8191[^\\n]\%*[^\\n]\", __myonTmpBuffer) == EOF) {\nreturn 1;\n}\nscanf(\"\%*c\");\n");
+            post("");
+        }
+        if (lang == 1) {
+        }
+        expect(";");
     }
     else if (!next_equal("=") || !next_equal("is") || !equal("=") || !equal("is")) {
         node->ti--;
@@ -736,15 +756,6 @@ Node *sent() {
         if (lang == 0) post(";");
         post("\n");
     }
-    else if (!equal("input")) {
-        int input_data;
-        scanf("%d", &input_data);
-        node->ti++;
-        node = add_sub();node->ti++;
-        expect(";");
-        //mov(node->var, input_data);
-        node->mem[mem_index(node->var)].val = input_data;
-    }
     else if (!equal("loop")) {
         int loop_bool, c;
         c = 0;
@@ -816,7 +827,9 @@ Node *sent() {
     else if (!equal(";") || !next_equal(";")) {
         if (lang == 1) post("\n");
         if (node->var[0] != ';') {
-            for (int i=0;i<node->indent;i++) post("\t");
+            if (lang == 1) {
+                for (int i=0;i<node->indent;i++) post("\t");
+            }
             post(node->var);
         }
 
@@ -891,8 +904,12 @@ Node *funcCall() {
         char func_call_sent[10000];
         if (strcmp(call_func_name, "put")) {
             if (lang == 1) for (int i=0;i<node->indent;i++) post("\t");
-            if (lang == 0 || !B_NOTMYON) strcat(func_call_sent, call_func_name); // printでなければの処理
-            else sprintf(func_call_sent, "myon_%s", call_func_name); // printでなければの処理
+            if (!B_NOTMYON) {
+                sprintf(func_call_sent, "%s", call_func_name); // printの処理
+            }
+            else {
+                sprintf(func_call_sent, "myon_%s", call_func_name); // printでなければの処理
+            }
         }
         else {
             if (lang == 1) {
@@ -1068,6 +1085,7 @@ void parse(char token_s[1024][1024], Typekind ty[1024]) {
 
     node = composition();
 
+
     if (lang == 0) {
 
         char *tmp_ptr      = NULL;
@@ -1083,9 +1101,9 @@ void parse(char token_s[1024][1024], Typekind ty[1024]) {
         sprintf(tmp_ptr, "%s\n%s", include_sent, node->write_data);
         node->write_data = malloc(strlen(tmp_ptr));
 
-        strcpy(node->write_data, tmp_ptr);
+        node->write_data = tmp_ptr;
         post("\nint main() { return myon_main(); }\n");
-    free(tmp_ptr);
+    //free(tmp_ptr);
     }
     if (lang == 1) {
         post("\nmyon_main()\n");
@@ -1104,21 +1122,5 @@ void parse(char token_s[1024][1024], Typekind ty[1024]) {
 
 /*
  *
- * Myon/
- * ┃
- * ┠ Documents/
- * ┃  ┗ README.md
- * ┃
- * ┠ bin/
- * ┃  ┗ myon
- * ┃
- * ┠ build/
- * ┃  ┣ main.c
- * ┃  ┣ parse.c
- * ┃  ┣ token.c
- * ┃  ┗ myon.h
- * ┃
- * ┠ lib/
- * ┃  ┗ common.h
  *
 */

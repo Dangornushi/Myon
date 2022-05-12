@@ -13,6 +13,7 @@
 #define PATH_SIZE 1024
 #define MAX_INDEX 9024
 #define MAX_FILE 1024
+#define MAX_COMMAND_LINE_LEN 8191
 
 extern char *file_name;
 extern int lang;
